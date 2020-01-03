@@ -1,7 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Globalization;
 using System.IO;
 using System.Linq;
 using Microsoft.ML;
@@ -19,13 +17,13 @@ namespace TaxiFarePrediction
         private static readonly string TrainDataRelativePath = $"{BaseDatasetsRelativePath}/taxi-fare-train.csv";
         private static readonly string TestDataRelativePath = $"{BaseDatasetsRelativePath}/taxi-fare-test.csv";
 
-        private static readonly string TrainDataPath = GetAbsolutePath(TrainDataRelativePath);
-        private static readonly string TestDataPath = GetAbsolutePath(TestDataRelativePath);
+        private static readonly string TrainDataPath = PathHelper.GetAbsolutePath(TrainDataRelativePath);
+        private static readonly string TestDataPath = PathHelper.GetAbsolutePath(TestDataRelativePath);
 
         private static readonly string BaseModelsRelativePath = @"../../../../MLModels";
         private static readonly string ModelRelativePath = $"{BaseModelsRelativePath}/TaxiFareModel.zip";
 
-        private static readonly string ModelPath = GetAbsolutePath(ModelRelativePath);
+        private static readonly string ModelPath = PathHelper.GetAbsolutePath(ModelRelativePath);
 
         static void Main(string[] args) //If args[0] == "svg" a vector-based chart will be created instead a .png chart
         {
@@ -83,7 +81,7 @@ namespace TaxiFarePrediction
             // STEP 5: Evaluate the model and show accuracy stats
             Console.WriteLine("===== Evaluating Model's accuracy with Test data =====");
 
-            IDataView predictions = trainedModel.Transform(testDataView);
+            var predictions = trainedModel.Transform(testDataView);
             var metrics = mlContext.Regression.Evaluate(predictions, labelColumnName: "Label", scoreColumnName: "Score");
 
             ConsoleHelper.PrintRegressionMetrics(trainer.ToString(), metrics);
@@ -91,16 +89,15 @@ namespace TaxiFarePrediction
             // STEP 6: Save/persist the trained model to a .ZIP file
             mlContext.Model.Save(trainedModel, trainingDataView.Schema, ModelPath);
 
-            Console.WriteLine("The model is saved to {0}", ModelPath);
+            Console.WriteLine($"The model is saved to {ModelPath}");
         }
 
         private static void TestSinglePrediction(MLContext mlContext)
         {
-            //Sample: 
             //vendor_id,rate_code,passenger_count,trip_time_in_secs,trip_distance,payment_type,fare_amount
             //VTS,1,1,1140,3.75,CRD,15.5
 
-            var taxiTripSample = new TaxiTrip()
+            var taxiTripSample = new TaxiTrip
             {
                 VendorId = "VTS",
                 RateCode = "1",
@@ -111,18 +108,17 @@ namespace TaxiFarePrediction
                 FareAmount = 0 // To predict. Actual/Observed = 15.5
             };
 
-            ///
-            ITransformer trainedModel = mlContext.Model.Load(ModelPath, out var modelInputSchema);
+            // Load trained model
+            var trainedModel = mlContext.Model.Load(ModelPath, out var modelInputSchema);
 
             // Create prediction engine related to the loaded trained model
             var predEngine = mlContext.Model.CreatePredictionEngine<TaxiTrip, TaxiTripFarePrediction>(trainedModel);
 
             //Score
             var resultprediction = predEngine.Predict(taxiTripSample);
-            ///
 
             Console.WriteLine($"**********************************************************************");
-            Console.WriteLine($"Predicted fare: {resultprediction.FareAmount:0.####}, actual fare: 15.5");
+            Console.WriteLine($"Predicted fare: {resultprediction.FareAmount:0.#####}, actual fare: 15.5");
             Console.WriteLine($"**********************************************************************");
         }
 
@@ -181,7 +177,7 @@ namespace TaxiFarePrediction
                 pl.col0(1);
 
                 int totalNumber = numberOfRecordsToRead;
-                var testData = new TaxiTripCsvReader().GetDataFromCsv(testDataSetPath, totalNumber).ToList();
+                var testData = TaxiTripCsvReader.GetDataFromCsv(testDataSetPath, totalNumber).ToList();
 
                 //This code is the symbol to paint
                 char code = (char)9;
@@ -273,47 +269,12 @@ namespace TaxiFarePrediction
 
             Console.WriteLine("Showing chart...");
             var p = new Process();
-            string chartFileNamePath = @".\" + chartFileName;
+            var chartFileNamePath = @".\" + chartFileName;
             p.StartInfo = new ProcessStartInfo(chartFileNamePath)
             {
                 UseShellExecute = true
             };
             p.Start();
         }
-
-        public static string GetAbsolutePath(string relativePath)
-        {
-            FileInfo _dataRoot = new FileInfo(typeof(Program).Assembly.Location);
-            string assemblyFolderPath = _dataRoot.Directory.FullName;
-
-            string fullPath = Path.Combine(assemblyFolderPath, relativePath);
-
-            return fullPath;
-        }
     }
-
-    public class TaxiTripCsvReader
-    {
-        public IEnumerable<TaxiTrip> GetDataFromCsv(string dataLocation, int numMaxRecords)
-        {
-            IEnumerable<TaxiTrip> records =
-                File.ReadAllLines(dataLocation)
-                .Skip(1)
-                .Select(x => x.Split(','))
-                .Select(x => new TaxiTrip
-                {
-                    VendorId = x[0],
-                    RateCode = x[1],
-                    PassengerCount = float.Parse(x[2], CultureInfo.InvariantCulture),
-                    TripTime = float.Parse(x[3], CultureInfo.InvariantCulture),
-                    TripDistance = float.Parse(x[4], CultureInfo.InvariantCulture),
-                    PaymentType = x[5],
-                    FareAmount = float.Parse(x[6], CultureInfo.InvariantCulture)
-                })
-                .Take<TaxiTrip>(numMaxRecords);
-
-            return records;
-        }
-    }
-
 }
