@@ -69,7 +69,7 @@ namespace TaxiFarePrediction
             ConsoleHelper.PeekDataViewInConsole(mlContext, trainingDataView, dataProcessPipeline, 5);
             ConsoleHelper.PeekVectorColumnDataInConsole(mlContext, "Features", trainingDataView, dataProcessPipeline, 5);
 
-            // STEP 3: Set the training algorithm, then create and config the modelBuilder - Selected Trainer (SDCA Regression algorithm)                            
+            // STEP 3: Set the training algorithm, then create and config the modelBuilder - Selected Trainer (SDCA Regression algorithm)
             var trainer = mlContext.Regression.Trainers.Sdca(labelColumnName: "Label", featureColumnName: "Features");
             var trainingPipeline = dataProcessPipeline.Append(trainer);
 
@@ -258,11 +258,6 @@ namespace TaxiFarePrediction
 
                 // end page (writes output to disk)
                 pl.eop();
-
-                // output version of PLplot
-                pl.gver(out var verText);
-                Console.WriteLine("PLplot version " + verText);
-
             } // the pl object is disposed here
 
             // Open Chart File In Microsoft Photos App (Or default app, like browser for .svg)
