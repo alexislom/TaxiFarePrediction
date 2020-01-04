@@ -25,9 +25,8 @@ namespace TaxiFarePrediction
 
         private static readonly string ModelPath = PathHelper.GetAbsolutePath(ModelRelativePath);
 
-        static void Main(string[] args) //If args[0] == "svg" a vector-based chart will be created instead a .png chart
+        static void Main(string[] args)
         {
-            //Create ML Context with seed for repeteable/deterministic results
             var mlContext = new MLContext(seed: 0);
 
             // Create, Train, Evaluate and Save a model
@@ -49,7 +48,7 @@ namespace TaxiFarePrediction
             var baseTrainingDataView = mlContext.Data.LoadFromTextFile<TaxiTrip>(TrainDataPath, hasHeader: true, separatorChar: ',');
             var testDataView = mlContext.Data.LoadFromTextFile<TaxiTrip>(TestDataPath, hasHeader: true, separatorChar: ',');
 
-            //Sample code of removing extreme data like "outliers" for FareAmounts higher than $150 and lower than $1 which can be error-data 
+            //Removing extreme data for FareAmounts higher than $150 and lower than $1 which can be error-data
             var cnt = baseTrainingDataView.GetColumn<float>(nameof(TaxiTrip.FareAmount)).Count();
             var trainingDataView = mlContext.Data.FilterRowsByColumn(baseTrainingDataView, nameof(TaxiTrip.FareAmount), lowerBound: 1, upperBound: 150);
             var cnt2 = trainingDataView.GetColumn<float>(nameof(TaxiTrip.FareAmount)).Count();
@@ -65,7 +64,7 @@ namespace TaxiFarePrediction
                             .Append(mlContext.Transforms.Concatenate("Features", "VendorIdEncoded", "RateCodeEncoded", "PaymentTypeEncoded", nameof(TaxiTrip.PassengerCount)
                             , nameof(TaxiTrip.TripTime), nameof(TaxiTrip.TripDistance)));
 
-            // (OPTIONAL) Peek data (such as 5 records) in training DataView after applying the ProcessPipeline's transformations into "Features" 
+            // (OPTIONAL) Peek data (such as 5 records) in training DataView after applying the ProcessPipeline's transformations into "Features"
             ConsoleHelper.PeekDataViewInConsole(mlContext, trainingDataView, dataProcessPipeline, 5);
             ConsoleHelper.PeekVectorColumnDataInConsole(mlContext, "Features", trainingDataView, dataProcessPipeline, 5);
 
@@ -172,8 +171,6 @@ namespace TaxiFarePrediction
                 // The main title
                 pl.lab("Measured", "Predicted", "Distribution of Taxi Fare Prediction");
 
-                // plot using different colors
-                // see http://plplot.sourceforge.net/examples.php?demo=02 for palette indices
                 pl.col0(1);
 
                 int totalNumber = numberOfRecordsToRead;
@@ -258,7 +255,7 @@ namespace TaxiFarePrediction
 
                 // end page (writes output to disk)
                 pl.eop();
-            } // the pl object is disposed here
+            }
 
             // Open Chart File In Microsoft Photos App (Or default app, like browser for .svg)
 
